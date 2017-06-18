@@ -12,13 +12,18 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <math.h>
-#include <stdint.h>
+// #include <stdint.h>
+#include "pstdint.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#ifdef _WIN32
+#include <io.h>
+#else
 #include <unistd.h>
+#endif
 
 #include "bloom.h"
 #include "murmurhash2.h"
@@ -27,8 +32,9 @@
 #define STRING(n) #n
 
 
-inline static int test_bit_set_bit(unsigned char * buf,
-                                   unsigned int x, int set_bit)
+//inline static int test_bit_set_bit(unsigned char * buf,
+__inline static int test_bit_set_bit(unsigned char * buf,
+                                     unsigned int x, int set_bit)
 {
   unsigned int byte = x >> 3;
   unsigned char c = buf[byte];        // expensive memory access
@@ -48,16 +54,19 @@ inline static int test_bit_set_bit(unsigned char * buf,
 static int bloom_check_add(struct bloom * bloom,
                            const void * buffer, int len, int add)
 {
+  int hits = 0;
+  register unsigned int a;
+  register unsigned int b;
+  register unsigned int x;
+  register unsigned int i;
+
   if (bloom->ready == 0) {
     printf("bloom at %p not initialized!\n", (void *)bloom);
     return -1;
   }
 
-  int hits = 0;
-  register unsigned int a = murmurhash2(buffer, len, 0x9747b28c);
-  register unsigned int b = murmurhash2(buffer, len, a);
-  register unsigned int x;
-  register unsigned int i;
+  a = murmurhash2(buffer, len, 0x9747b28c);
+  b = murmurhash2(buffer, len, a);
 
   for (i = 0; i < bloom->hashes; i++) {
     x = (a + i*b) % bloom->bits;
@@ -83,6 +92,10 @@ int bloom_init_size(struct bloom * bloom, int entries, double error,
 
 int bloom_init(struct bloom * bloom, int entries, double error)
 {
+  double num;
+  double denom;
+  double dentries;
+
   bloom->ready = 0;
 
   if (entries < 1000 || error == 0) {
@@ -92,11 +105,11 @@ int bloom_init(struct bloom * bloom, int entries, double error)
   bloom->entries = entries;
   bloom->error = error;
 
-  double num = log(bloom->error);
-  double denom = 0.480453013918201; // ln(2)^2
+  num = log(bloom->error);
+  denom = 0.480453013918201; // ln(2)^2
   bloom->bpe = -(num / denom);
 
-  double dentries = (double)entries;
+  dentries = (double)entries;
   bloom->bits = (int)(dentries * bloom->bpe);
 
   if (bloom->bits % 8) {

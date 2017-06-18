@@ -28,7 +28,7 @@ struct bloom
   double error;
   int bits;
   int bytes;
-  int hashes;
+  unsigned int hashes;
 
   // Fields below are private to the implementation. These may go away or
   // change incompatibly at any moment. Client code MUST NOT access or rely
