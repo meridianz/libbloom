@@ -12,17 +12,20 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <math.h>
-// #include <stdint.h>
-#include "pstdint.h"
+#ifdef __linux__
+    #include <stdint.h>
+#elif _WIN32
+    #include "pstdint.h"
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#ifdef _WIN32
-#include <io.h>
-#else
-#include <unistd.h>
+#ifdef __linux__
+    #include <unistd.h>
+#elif _WIN32
+    #include <io.h>
 #endif
 
 #include "bloom.h"
